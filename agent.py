@@ -1,4 +1,4 @@
-# agent_com_rag.py - Agente com RAG integrado
+# agent.py - Agente com RAG integrado (CORRIGIDO)
 
 import os
 import pandas as pd
@@ -48,18 +48,14 @@ class AgenteEDAComRAG:
         if not groq_api_key:
             raise ValueError("GROQ_API_KEY não encontrada. Configure no arquivo .env")
 
-        # Modelos disponíveis no Groq:
-        # - llama-3.3-70b-versatile (Recomendado - mais inteligente, MAS menor limite)
-        # - llama-3.1-8b-instant (Mais rápido e maior limite)
-        # - mixtral-8x7b-32768 (Ótimo para contexto longo)
-        # - gemma2-9b-it (Equilibrado)
-
-        model_name = "llama-3.1-8b-instant"  # Modelo mais rápido com maior limite
+        # Usar modelo mais leve para evitar erro 413
+        model_name = "llama-3.1-8b-instant"
 
         self.llm = ChatGroq(
             temperature=0,
             groq_api_key=groq_api_key,
-            model_name=model_name
+            model_name=model_name,
+            max_tokens=1000  # Limitar tokens de resposta
         )
         print(f"✅ LLM configurado: {model_name}")
 
@@ -85,7 +81,7 @@ class AgenteEDAComRAG:
 
             # Criar retriever
             self.retriever = self.vectorstore.as_retriever(
-                search_kwargs={"k": 3}  # Retorna top 3 resultados
+                search_kwargs={"k": 2}  # Reduzir para 2 resultados
             )
 
             # Verificar se há documentos
@@ -154,16 +150,12 @@ class AgenteEDAComRAG:
     def buscar_documentos(self, pergunta: str) -> str:
         """
         Busca informações nos documentos PDF indexados usando RAG.
-        Use esta ferramenta para responder perguntas sobre documentos técnicos, artigos, relatórios, etc.
-
-        Args:
-            pergunta: A pergunta ou termo de busca
         """
         if not self.tem_rag_disponivel():
-            return "❌ RAG não está disponível. Execute vectorstore_creator.py primeiro."
+            return "❌ RAG não está disponível."
 
         if not pergunta:
-            return "❌ Forneça uma pergunta para buscar nos documentos."
+            return "❌ Forneça uma pergunta."
 
         try:
             # Buscar documentos relevantes
@@ -172,15 +164,15 @@ class AgenteEDAComRAG:
             if not docs:
                 return "📭 Nenhum documento relevante encontrado."
 
-            # Formatar resultados
-            resultado = f"📚 Encontrei {len(docs)} trechos relevantes:\n\n"
+            # Formatar resultados de forma mais concisa
+            resultado = f"📚 {len(docs)} trechos relevantes:\n\n"
 
             for i, doc in enumerate(docs, 1):
-                conteudo = doc.page_content[:300]  # Limitar tamanho
+                conteudo = doc.page_content[:200]  # Reduzir tamanho
                 fonte = doc.metadata.get('source', 'Desconhecida')
                 pagina = doc.metadata.get('page', '?')
 
-                resultado += f"🔹 Trecho {i} (Fonte: {Path(fonte).name}, Pág: {pagina}):\n"
+                resultado += f"🔹 {i} ({Path(fonte).name}, Pág {pagina}):\n"
                 resultado += f"{conteudo}...\n\n"
 
             return resultado
@@ -188,8 +180,8 @@ class AgenteEDAComRAG:
         except Exception as e:
             return f"❌ Erro na busca: {str(e)}"
 
-    def resumo_dataset(self, query: str = "", *args, **kwargs) -> str:
-        """Retorna resumo do dataset CSV carregado. O parâmetro query é ignorado."""
+    def resumo_dataset(self, query: str = "") -> str:
+        """Retorna resumo do dataset CSV carregado."""
         if not self.tem_dataset_carregado():
             return "❌ Nenhum dataset CSV carregado."
 
@@ -198,14 +190,14 @@ class AgenteEDAComRAG:
                 f"📏 Dimensões: {self.df.shape[0]:,} linhas × {self.df.shape[1]} colunas\n"
                 f"📋 Colunas: {', '.join(self.df.columns[:5])}...")
 
-    def nomes_colunas(self, query: str = "", *args, **kwargs) -> str:
-        """Retorna nomes das colunas do dataset. O parâmetro query é ignorado."""
+    def nomes_colunas(self, query: str = "") -> str:
+        """Retorna nomes das colunas do dataset."""
         if not self.tem_dataset_carregado():
             return "❌ Nenhum dataset carregado."
 
         colunas = list(self.df.columns)
-        if len(colunas) > 15:
-            return f"📋 {len(colunas)} colunas: {', '.join(colunas[:10])}..."
+        if len(colunas) > 10:
+            return f"📋 {len(colunas)} colunas: {', '.join(colunas[:8])}..."
         return f"📋 Colunas: {', '.join(colunas)}"
 
     def estatisticas_coluna(self, coluna: str) -> str:
@@ -215,26 +207,29 @@ class AgenteEDAComRAG:
         if coluna not in self.df.columns:
             return f"❌ Coluna '{coluna}' não encontrada."
 
-        if pd.api.types.is_numeric_dtype(self.df[coluna]):
-            stats = self.df[coluna].describe()
-            return (f"📊 Estatísticas '{coluna}':\n"
-                    f"  • Média: {stats['mean']:.2f}\n"
-                    f"  • Desvio: {stats['std']:.2f}\n"
-                    f"  • Mín: {stats['min']:.2f} | Máx: {stats['max']:.2f}\n"
-                    f"  • Mediana: {stats['50%']:.2f}")
-        else:
-            unique = self.df[coluna].nunique()
-            top = self.df[coluna].value_counts().head(3)
-            return (f"📝 Estatísticas '{coluna}':\n"
-                    f"  • Valores únicos: {unique}\n"
-                    f"  • Top 3:\n{top.to_string()}")
+        try:
+            if pd.api.types.is_numeric_dtype(self.df[coluna]):
+                stats = self.df[coluna].describe()
+                return (f"📊 '{coluna}':\n"
+                        f"  • Média: {stats['mean']:.2f}\n"
+                        f"  • Desvio: {stats['std']:.2f}\n"
+                        f"  • Min/Max: {stats['min']:.2f}/{stats['max']:.2f}\n"
+                        f"  • Mediana: {stats['50%']:.2f}")
+            else:
+                unique = self.df[coluna].nunique()
+                top = self.df[coluna].value_counts().head(2)  # Reduzir para top 2
+                return (f"📝 '{coluna}':\n"
+                        f"  • Únicos: {unique}\n"
+                        f"  • Top 2:\n{top.to_string()}")
+        except Exception as e:
+            return f"❌ Erro ao calcular estatísticas: {str(e)}"
 
     def criar_histograma(self, coluna: str) -> str:
-        """Cria um histograma para uma coluna numérica do dataset"""
+        """Cria um histograma para uma coluna numérica"""
         return self.criar_grafico("histograma", coluna)
 
     def criar_boxplot(self, coluna: str) -> str:
-        """Cria um boxplot para uma coluna numérica do dataset"""
+        """Cria um boxplot para uma coluna numérica"""
         return self.criar_grafico("boxplot", coluna)
 
     def criar_grafico(self, tipo: str, coluna: str) -> str:
@@ -246,11 +241,11 @@ class AgenteEDAComRAG:
         if not pd.api.types.is_numeric_dtype(self.df[coluna]):
             return f"❌ '{coluna}' não é numérica."
 
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(8, 5))  # Reduzir tamanho
 
         try:
             if tipo.lower() == "histograma":
-                plt.hist(self.df[coluna].dropna(), bins=30, alpha=0.7, edgecolor='black')
+                plt.hist(self.df[coluna].dropna(), bins=20, alpha=0.7, edgecolor='black')  # Reduzir bins
                 plt.title(f'Histograma - {coluna}')
                 plt.xlabel(coluna)
                 plt.ylabel('Frequência')
@@ -259,11 +254,11 @@ class AgenteEDAComRAG:
                 plt.title(f'Boxplot - {coluna}')
                 plt.ylabel(coluna)
             else:
-                return "❌ Tipo inválido. Use 'histograma' ou 'boxplot'."
+                return "❌ Tipo inválido."
 
             plt.tight_layout()
             buffer = io.BytesIO()
-            plt.savefig(buffer, format='png', dpi=100)
+            plt.savefig(buffer, format='png', dpi=80)  # Reduzir DPI
             buffer.seek(0)
             img_base64 = base64.b64encode(buffer.getvalue()).decode()
             plt.close()
@@ -274,126 +269,108 @@ class AgenteEDAComRAG:
             plt.close()
             return f"❌ Erro: {str(e)}"
 
-    def ajuda(self, query: str = "", *args, **kwargs) -> str:
-        """Mostra exemplos de perguntas. O parâmetro query é ignorado."""
+    def ajuda(self, query: str = "") -> str:
+        """Mostra exemplos de perguntas."""
         rag_status = "✅ Ativo" if self.tem_rag_disponivel() else "❌ Desativado"
         csv_status = "✅ Carregado" if self.tem_dataset_carregado() else "❌ Não carregado"
 
         return f"""
-💡 EXEMPLOS DE PERGUNTAS:
+💡 EXEMPLOS:
 
-📚 Consulta em PDFs (RAG {rag_status}):
-- "o que os documentos dizem sobre machine learning?"
-- "explique o conceito X baseado nos PDFs"
-- "resumo sobre tecnologia Y"
+📚 PDFs (RAG {rag_status}):
+- "o que é machine learning?"
+- "explique desvio padrão"
 
-📊 Análise de CSV ({csv_status}):
+📊 CSV ({csv_status}):
 - "resumo do dataset"
 - "nomes das colunas"
-- "estatísticas da coluna Amount"
-- "criar histograma de Amount"
-- "criar boxplot de V1"
-        """
+- "estatísticas da coluna V1"
+- "histograma de Amount"
+"""
 
     # ==================== CRIAÇÃO DO EXECUTOR ====================
 
     def criar_executor(self) -> AgentExecutor:
         """Cria o AgentExecutor com todas as ferramentas"""
 
-        # Criar ferramentas manualmente (sem decorator @tool)
+        # Criar ferramentas
         ferramentas = [
             Tool(
                 name="buscar_documentos",
                 func=self.buscar_documentos,
-                description="Busca informações nos documentos PDF indexados. Use para responder perguntas sobre documentos técnicos, artigos, relatórios."
+                description="Busca em documentos PDF. Use para perguntas sobre conceitos técnicos."
             ),
             Tool(
                 name="resumo_dataset",
                 func=self.resumo_dataset,
-                description="Retorna resumo do dataset CSV carregado com dimensões e colunas."
+                description="Resumo do dataset CSV com dimensões e colunas."
             ),
             Tool(
                 name="nomes_colunas",
                 func=self.nomes_colunas,
-                description="Retorna os nomes de todas as colunas do dataset CSV."
+                description="Lista os nomes das colunas do dataset."
             ),
             Tool(
                 name="estatisticas_coluna",
                 func=self.estatisticas_coluna,
-                description="Calcula estatísticas descritivas (média, desvio, mín, máx) para uma coluna específica do dataset. Argumento: nome da coluna."
+                description="Estatísticas de uma coluna específica. Argumento: nome_da_coluna"
             ),
             Tool(
                 name="criar_histograma",
                 func=self.criar_histograma,
-                description="Cria um histograma para visualizar a distribuição de uma coluna numérica. Argumento: nome da coluna."
+                description="Histograma para coluna numérica. Argumento: nome_da_coluna"
             ),
             Tool(
                 name="criar_boxplot",
                 func=self.criar_boxplot,
-                description="Cria um boxplot para visualizar outliers e quartis de uma coluna numérica. Argumento: nome da coluna."
+                description="Boxplot para coluna numérica. Argumento: nome_da_coluna"
             ),
             Tool(
                 name="ajuda",
                 func=self.ajuda,
-                description="Mostra exemplos de perguntas que podem ser feitas ao assistente."
+                description="Exemplos de perguntas."
             ),
         ]
 
-        rag_info = "Você tem acesso a documentos PDF através da ferramenta 'buscar_documentos'." if self.tem_rag_disponivel() else "RAG não disponível."
-
+        # Prompt mais curto e direto
         prompt = ChatPromptTemplate.from_messages([
-            ("system", f"""Você é um assistente de Análise de Dados inteligente e prestativo.
+            SystemMessage(content=f"""Você é um assistente de análise de dados.
 
-SUAS CAPACIDADES:
-1. 📚 Consultar documentos PDF usando 'buscar_documentos'
-2. 📊 Analisar datasets CSV usando ferramentas específicas
-3. 📈 Criar visualizações de dados
-4. 💡 Responder perguntas conceituais diretamente
+CAPACIDADES:
+- Consultar PDFs com 'buscar_documentos'
+- Analisar CSV com as ferramentas
+- Criar visualizações
 
-{rag_info}
+REGRAS:
+1. Para dados do dataset: SEMPRE use as ferramentas
+2. Para conceitos gerais: responda diretamente
+3. Seja conciso nas respostas
 
-REGRAS CRÍTICAS:
-
-1. PERGUNTAS SOBRE DADOS DO DATASET:
-   - "qual a média das colunas" → USE nomes_colunas PRIMEIRO, depois estatisticas_coluna
-   - "quais as colunas" → USE nomes_colunas
-   - "estatísticas da coluna X" → USE estatisticas_coluna
-   - "resumo do dataset" → USE resumo_dataset
-   - NUNCA invente valores de dados. SEMPRE use as ferramentas!
-
-2. PERGUNTAS CONCEITUAIS:
-   - "o que é média?" → Responda diretamente
-   - "diferença entre média e mediana?" → Responda diretamente
-   - Não precisa de ferramentas para explicar conceitos
-
-3. WORKFLOW CORRETO:
-   Para "média das colunas do dataset":
-   a) Primeiro: nomes_colunas() para ver quais colunas existem
-   b) Depois: estatisticas_coluna() para cada coluna numérica
-   c) Finalmente: apresente os resultados reais obtidos
-
-IMPORTANTE: Sempre que a pergunta mencionar "dataset" ou "dados", você DEVE usar as ferramentas!"""),
+RAG: {'✅ Ativo' if self.tem_rag_disponivel() else '❌ Inativo'}
+CSV: {'✅ Carregado' if self.tem_dataset_carregado() else '❌ Não carregado'}
+"""),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
         ])
 
         agente = create_tool_calling_agent(self.llm, ferramentas, prompt)
+
         memoria = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True,
-            input_key="input"
+            input_key="input",
+            max_token_limit=1000  # Limitar memória
         )
 
         executor = AgentExecutor(
             agent=agente,
             tools=ferramentas,
             memory=memoria,
-            verbose=True,  # Ativar para debug
+            verbose=False,  # Desativar verbose para reduzir output
             handle_parsing_errors=True,
-            max_iterations=10,  # Aumentar iterações
-            early_stopping_method="generate",
-            return_intermediate_steps=False
+            max_iterations=3,  # Reduzir iterações
+            early_stopping_method="generate"
         )
 
         print("✅ Agente configurado com sucesso!")
@@ -405,7 +382,7 @@ IMPORTANTE: Sempre que a pergunta mencionar "dataset" ou "dados", você DEVE usa
 def main():
     """Função principal"""
     print("\n" + "=" * 60)
-    print("🤖 ASSISTENTE INTELIGENTE - RAG + ANÁLISE DE DADOS")
+    print("🤖 ASSISTENTE - RAG + ANÁLISE DE DADOS")
     print("=" * 60)
 
     try:
