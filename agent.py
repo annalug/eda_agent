@@ -11,7 +11,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from langchain_groq import ChatGroq
-from langchain.tools import Tool
+
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -19,6 +19,8 @@ from langchain_core.messages import SystemMessage
 from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from pydantic.v1 import BaseModel, Field
+
+from langchain.tools import Tool, StructuredTool
 
 
 # --- Schemas de Argumentos para as Ferramentas ---
@@ -166,22 +168,48 @@ class AgenteEDAComRAG:
 
     def criar_executor(self) -> AgentExecutor:
         ferramentas = [
-            Tool(name="buscar_documentos", func=self.buscar_documentos,
-                 description="Use para perguntas sobre conceitos, definições ou explicações (ex: 'o que é média?').",
-                 args_schema=BuscarDocumentosArgs),
-            Tool(name="estatisticas_gerais", func=self.estatisticas_gerais,
-                 description="Use para perguntas sobre estatísticas de VÁRIAS colunas ao mesmo tempo (ex: 'quais as médias das colunas?', 'estatísticas gerais')."),
-            Tool(name="resumo_dataset", func=self.resumo_dataset,
-                 description="Use para perguntas sobre o nome do arquivo, número de linhas ou colunas."),
-            Tool(name="nomes_colunas",func=self.nomes_colunas,
-     description="Use para listar os nomes de TODAS as colunas.",
-     args_schema=SemArgumentosArgs),
-            Tool(name="estatisticas_coluna", func=self.estatisticas_coluna,
-                 description="Use para obter estatísticas de UMA ÚNICA coluna.", args_schema=EstatisticasColunaArgs),
-            Tool(name="criar_histograma", func=self.criar_histograma,
-                 description="Use para criar um histograma de UMA ÚNICA coluna.", args_schema=GraficoArgs),
-            Tool(name="criar_boxplot", func=self.criar_boxplot,
-                 description="Use para criar um boxplot de UMA ÚNICA coluna.", args_schema=GraficoArgs),
+            StructuredTool(
+                name="buscar_documentos",
+                func=self.buscar_documentos,
+                description="Use para perguntas sobre conceitos, definições ou explicações (ex: 'o que é média?').",
+                args_schema=BuscarDocumentosArgs
+            ),
+            StructuredTool(
+                name="estatisticas_gerais",
+                func=self.estatisticas_gerais,
+                description="Use para perguntas sobre estatísticas de VÁRIAS colunas ao mesmo tempo (ex: 'quais as médias das colunas?', 'estatísticas gerais').",
+                args_schema=SemArgumentosArgs  # ← CORREÇÃO AQUI
+            ),
+            StructuredTool(
+                name="resumo_dataset",
+                func=self.resumo_dataset,
+                description="Use para perguntas sobre o nome do arquivo, número de linhas ou colunas.",
+                args_schema=SemArgumentosArgs  # ← CORREÇÃO AQUI
+            ),
+            StructuredTool(
+                name="nomes_colunas",
+                func=self.nomes_colunas,
+                description="Use para listar os nomes de TODAS as colunas.",
+                args_schema=SemArgumentosArgs
+            ),
+            StructuredTool(
+                name="estatisticas_coluna",
+                func=self.estatisticas_coluna,
+                description="Use para obter estatísticas de UMA ÚNICA coluna.",
+                args_schema=EstatisticasColunaArgs
+            ),
+            StructuredTool(
+                name="criar_histograma",
+                func=self.criar_histograma,
+                description="Use para criar um histograma de UMA ÚNICA coluna.",
+                args_schema=GraficoArgs
+            ),
+            StructuredTool(
+                name="criar_boxplot",
+                func=self.criar_boxplot,
+                description="Use para criar um boxplot de UMA ÚNICA coluna.",
+                args_schema=GraficoArgs
+            ),
         ]
 
         prompt = ChatPromptTemplate.from_messages([
