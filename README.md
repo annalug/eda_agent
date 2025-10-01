@@ -92,11 +92,12 @@ Baixe kaggle.json da sua conta Kaggle
 
 Coloque em ~/.kaggle/kaggle.json (Linux/Mac) ou C:\Users\seu_usuario\.kaggle\kaggle.json (Windows)
 
-🎯 Fluxo de Uso
+🎯 Fluxo de Uso:
+
 1. 🗄️ Preparar Base de Conhecimento (RAG)
 
-# Coloque seus PDFs técnicos na pasta rag_files/
-# Execute o criador do banco vetorial
+Coloque seus PDFs técnicos na pasta rag_files/
+Execute o criador do banco vetorial
 ```
 python vectorstore_creator.py
 ```
