@@ -1,180 +1,172 @@
-# 📊 Agente de Análise de Dados com RAG
+# 📊 Data Analysis Agent with RAG
 
-Sistema inteligente para análise exploratória de dados (EDA) integrado com Retrieval Augmented Generation (RAG) para consulta em documentos técnicos. Permite análise estatística de datasets CSV combinada com consulta inteligente em documentos PDF.
-
-## 🏗️ Estrutura do Projeto
+An intelligent system for Exploratory Data Analysis (EDA) integrated with Retrieval-Augmented Generation (RAG) for querying technical documents.
+It performs statistical analysis on CSV datasets while enabling semantic search over PDF files.
+## 🏗️ Project Structure
 ```
 eda_agent/
-├── 📁 data/ # Dataset CSV (creditcard.csv)
-├── 📁 rag_files/ # Documentos PDF para base de conhecimento
-├── 📁 vectorstore/ # Banco vetorial persistido
-├── 📁 venv/ # Ambiente virtual Python
-├── 🔧 agent.py # Agente principal com ferramentas de análise
-├── 🎨 app.py # Interface web Streamlit
-├── 📥 dataset_download.py # Download automático do dataset
-├── 🗄️ vectorstore_creator.py # Criador do banco vetorial
-├── 🔍 vectorstore_loader.py # Carregador e testador do banco vetorial
-├── 🔑 .env # Variáveis de ambiente (GROQ_API_KEY)
-├── 📖 README.md # Documentação
-└── .gitignore # Arquivos ignorados pelo Git
+├── 📁 data/                 # CSV dataset (creditcard.csv)
+├── 📁 rag_files/            # PDF documents used as knowledge base
+├── 📁 vectorstore/          # Persisted vector database
+├── 📁 venv/                 # Python virtual environment
+├── 🔧 agent.py              # Main LangChain agent with tools (EDA + RAG)
+├── 🎨 app.py                # Streamlit web interface
+├── 📥 dataset_download.py   # Automated dataset downloader
+├── 🗄️ vectorstore_creator.py # Vectorstore creation from PDFs
+├── 🔍 vectorstore_loader.py  # Vectorstore loader/tester
+├── 🔑 .env                  # Environment variables (GROQ_API_KEY)
+└── 📖 README.md             # Documentation
 ```
 
 
-## 📁 Arquivos Principais
+## 📁 Main Files
 
 | Arquivo | Função |
 |---------|--------|
-| **`agent.py`** | Agente principal LangChain com ferramentas para estatísticas, visualização e RAG |
-| **`app.py`** | Interface Streamlit com chat interativo e painel de controle |
-| **`dataset_download.py`** | Download automático do dataset `creditcard.csv` da Kaggle |
-| **`vectorstore_creator.py`** | Criação do banco vetorial a partir dos PDFs em `rag_files/` |
-| **`vectorstore_loader.py`** | Carregamento e teste do banco vetorial persistido |
-| **`.env`** | Configuração da API key do Groq |
+| **`agent.py`** | LangChain agent with statistical tools, visualizations, and RAG search |
+| **`app.py`** | Streamlit interface with chat, real-time plots, and control panel |
+| **`dataset_download.py`** | Automatic download of creditcard.csv from Kaggle via KaggleHub |
+| **`vectorstore_creator.py`** | PDF loader, text splitter, embeddings, and ChromaDB vectorstore creation |
+| **`vectorstore_loader.py`** | Safe loader and tester for the persisted vectorstore |
+| **`.env`** | Contains the Groq API key |
 
-## 🚀 Funcionalidades
+## 🚀 Features
 
-### 🤖 Agente Inteligente (`agent.py`)
-- **Análise Estatística**: Estatísticas descritivas, resumos de dataset, análise de colunas
-- **Visualização de Dados**: Histogramas, boxplots e gráficos interativos
-- **Sistema RAG**: Consulta inteligente em documentos PDF técnicos
-- **Ferramentas Especializadas**:
-  - `buscar_documentos()` - Busca semântica em base de conhecimento
-  - `estatisticas_coluna()` - Análise estatística por coluna específica
-  - `criar_histograma()` - Visualização de distribuição de dados
-  - `criar_boxplot()` - Identificação de outliers e quartis
-  - `explicar_conceito()` - Explicações baseadas em documentos
-  - `nomes_colunas()` - Listagem de colunas disponíveis
+### 🤖 Intelligent Agent (`agent.py`)
+- **Statistical Analysis**: Descriptive statistics, dataset summary, numerical analysis
+- **Data Visualization**: Histograms and boxplots generated on demand
+- **RAG System**: Semantic search across technical PDF documents
+- **Specialized Tools**:
+  - `buscar_documentos()` - semantic PDF retrieval
+  - `estatisticas_coluna()` - column-level statistics
+  - `criar_histograma()` - distribution visualization
+  - `criar_boxplot()` - outlier & quartile inspection
+  - `explicar_conceito()` - list available dataset columns
+  - `nomes_colunas()` - global numerical summary
 
-### 🎨 Interface Web (`app.py`)
-- **Chat Interativo**: Interface conversacional com histórico persistente
-- **Visualização em Tempo Real**: Gráficos embutidos diretamente no chat
-- **Painel de Controle Lateral**: Status do sistema, exemplos rápidos, visualização de dados
-- **Design Responsivo**: Adaptável para diferentes dispositivos
-- **Gerenciamento de Estado**: Memória de conversa e controle de sessão
+### 🎨 Web Interface (`app.py`)
+- **Interactive Chat**: with persistent history
+- **Real-Time Visualizations**: embedded directly in the chat
+- **Sidebar Control Panel**: showing system status and dataset details
+- **Responsive Design**: for desktop/tablet
+- **State Management**: for conversation and session control
 
-### 📥 Gerenciamento de Dados (`dataset_download.py`)
-- **Download Automático**: Dataset de fraudes em cartões de crédito da Kaggle
-- **Pré-processamento Inteligente**: Amostragem automática para datasets grandes (>10k linhas)
-- **Estrutura Organizada**: Armazenamento padronizado na pasta `data/`
-- **Verificação de Integridade**: Confirmação de download e cópia bem-sucedida
+### 📥 Data Handling (`dataset_download.py`)
+- **Automatic Download**: of the credit card fraud dataset
+- **Smart Pre-processing**: automatic sampling for large datasets (>10k rows)
+- **Consistent Directory Structure**: under `data/`
+- **Integrity Check**: to confirm successful download and copy
 
-### 🗄️ Sistema RAG
+### 🗄️ RAG System
 **`vectorstore_creator.py`**:
-- **Processamento de PDFs**: Carregamento automático de documentos
-- **Chunking Inteligente**: Divisão em trechos otimizados (600 chars, 100 overlap)
-- **Embeddings**: Usa modelo `sentence-transformers/all-MiniLM-L6-v2`
-- **Persistência**: Salva banco vetorial em `vectorstore/`
+- Loads all PDFs from
+- Splits text into optimized chunks (600 chars, 100 overlap)
+- Generates embeddings with `sentence-transformers/all-MiniLM-L6-v2`
+- Saves a fully persistent ChromaDB `vectorstore/`
 
 **`vectorstore_loader.py`**:
-- **Carregamento Seguro**: Verificação de existência e integridade
-- **Testes Automáticos**: Validação da qualidade das buscas
-- **Estatísticas**: Contagem de documentos e verificação de funcionamento
+- Safely loads the vectorstore
+- Performs integrity checks and quick retrieval tests
+- Displays document counts and retrieval quality
 
-## 🛠️ Configuração e Instalação
+## 🛠️ Installation & Setup
 
-### Pré-requisitos
+### Requirements
 ```bash
-# Instalação das dependências
+
 pip install streamlit pandas numpy matplotlib langchain groq chromadb sentence-transformers kagglehub python-dotenv
 
-# Ou instale todas as dependências de uma vez
+
 pip install -r requirements.txt
 ```
-Configuração de Ambiente
+Environment Setup
 
-Crie o arquivo .env:
+Create your .env:
 ```
 GROQ_API_KEY=sua_chave_groq_aqui
 ```
-Configure a Kaggle (para download do dataset):
+Configure Kaggle (dataset download):
 
-Baixe kaggle.json da sua conta Kaggle
+Download your kaggle.json 
 
-Coloque em ~/.kaggle/kaggle.json (Linux/Mac) ou C:\Users\seu_usuario\.kaggle\kaggle.json (Windows)
+Place it in: ~/.kaggle/kaggle.json (Linux/Mac) or C:\Users\seu_usuario\.kaggle\kaggle.json (Windows)
 
-🎯 Fluxo de Uso:
+🎯 Usage Workflow:
 
-1. 🗄️ Preparar Base de Conhecimento (RAG)
+1. 🗄️ Prepare the Knowledge Base (RAG)
 
-Coloque seus PDFs técnicos na pasta rag_files/
-Execute o criador do banco vetorial
+Add your PDFs to rag_files/ and run:
+
 ```
 python vectorstore_creator.py
 ```
-2. 📥 Baixar Dataset
+2. 📥 Download the Dataset
 ```
 # Download automático do dataset de fraudes
 python dataset_download.py
 ```
-3. 🚀 Executar Sistema
+3. 🚀 Run the System
 ```
-# Interface web (recomendado)
+# Web interface (recommended)
 streamlit run app.py
 
-# Ou via console
+# or via console
 python agent.py
 ```
-4. 💬 Interagir com o Agente
+4. 💬 Interact with the Agent
 
-Exemplos de Perguntas:
+📊 Data Analysis Examples:Data Analysis Examples:
 
-📊 Análise de Dados:
+    “Dataset summary”
+    
+    “Statistics for column V1”
+    
+    “Create histogram of Amount”
+    
+    “Which columns are available?”
 
-        "Resumo do dataset"
+📚 Document Retrieval Examples:
 
-        "Estatísticas da coluna V1"
+    “What is standard deviation?”
+    
+    “Explain machine learning”
+    
+    “What do the documents say about exploratory analysis?”
 
-        "Criar histograma de Amount"
+🔧 Technologies Used
 
-        "Quais são as colunas disponíveis?"
+    LangChain — LLM agents and tooling
+    
+    Streamlit — interactive and responsive UI
+    
+    Groq API (Llama 3.1 8B Instant) — ultra-fast LLM inference
+    
+    ChromaDB — vector database for RAG
+    
+    HuggingFace — Sentence Transformers for embeddings
+    
+    Pandas / NumPy — data processing
+    
+    Matplotlib — visualizations
+    
+    KaggleHub — automated dataset download
 
-📚 Consulta em Documentos:
-
-        "O que é desvio padrão?"
-
-        "Explique o conceito de machine learning"
-
-        "O que os documentos dizem sobre análise exploratória?"
-
-🔧 Tecnologias Utilizadas
-
-    LangChain: Framework para aplicações LLM com agents e tools
-
-    Streamlit: Interface web interativa e responsiva
-
-    Groq API: LLM de alta performance (Llama 3.1 8B Instant)
-
-    ChromaDB: Banco de dados vetorial para RAG
-
-    HuggingFace: Sentence transformers para embeddings
-
-    Pandas/NumPy: Análise e processamento de dados
-
-    Matplotlib: Visualização e geração de gráficos
-
-    KaggleHub: Download automatizado de datasets
-
-⚙️ Configurações Técnicas
-Modelos e Parâmetros
+⚙️ Technical Configuration
 
     LLM: llama-3.1-8b-instant (Groq)
-
     Embeddings: sentence-transformers/all-MiniLM-L6-v2
-
-    Chunk Size: 600 caracteres
-
-    Chunk Overlap: 100 caracteres
-
-    Retrieval: Top 3 documentos relevantes
-
-Otimizações
-
-    Amostragem: Datasets grandes são reduzidos para 10.000 linhas
-
-    Memória: Buffer de conversa com limite de tokens
-
-    Erros: Tratamento robusto de exceções e parsing errors
-
-    Performance: Configurações para evitar limites de API
+    Chunk Size: 600 characters
+    Chunk Overlap: 100 characters
+    Retrieval: Top 3 most relevant documents
+    
+    Optimizations
+    
+    Automatic sampling for large datasets
+    
+    Conversation buffer with token limits
+    
+    Robust error handling
+    
+    Performance configurations to avoid API constraints
 
 
