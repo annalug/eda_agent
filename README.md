@@ -21,14 +21,14 @@ eda_agent/
 
 ## 📁 Main Files
 
-| Arquivo | Função |
-|---------|--------|
-| **`agent.py`** | LangChain agent with statistical tools, visualizations, and RAG search |
-| **`app.py`** | Streamlit interface with chat, real-time plots, and control panel |
-| **`dataset_download.py`** | Automatic download of creditcard.csv from Kaggle via KaggleHub |
+| File                         | Function                                                                 |
+|------------------------------|--------------------------------------------------------------------------|
+| **`agent.py`**               | LangChain agent with statistical tools, visualizations, and RAG search   |
+| **`app.py`**                 | Streamlit interface with chat, real-time plots, and control panel        |
+| **`dataset_download.py`**    | Automatic download of creditcard.csv from Kaggle via KaggleHub           |
 | **`vectorstore_creator.py`** | PDF loader, text splitter, embeddings, and ChromaDB vectorstore creation |
-| **`vectorstore_loader.py`** | Safe loader and tester for the persisted vectorstore |
-| **`.env`** | Contains the Groq API key |
+| **`vectorstore_loader.py`**  | Safe loader and tester for the persisted vectorstore                     |
+| **`.env`**                   | Contains the Groq API key                                                |
 
 ## 🚀 Features
 
