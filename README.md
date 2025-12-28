@@ -191,3 +191,8 @@ python agent.py
     Performance configurations to avoid API constraints
 
 
+## 🖥️ Web Interface
+
+![Chat Interface](images/1.png)
+![Chat Interface](images/2.png)
+![Chat Interface](images/3.png)
