@@ -1,12 +1,36 @@
-# vectorstore_creator.py
+# vectorstore_creator.py - Vector database creator for RAG (ENGLISH VERSION)
 
 import sys
 from pathlib import Path
-from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Chroma
-from langchain.embeddings import HuggingFaceEmbeddings
 
+# Imports with fallbacks for compatibility
+try:
+    from langchain_community.document_loaders import PyPDFDirectoryLoader
+except ImportError:
+    print("❌ Error: langchain_community not found!")
+    print("💡 Install with: pip install langchain-community")
+    sys.exit(1)
+
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ImportError:
+    print("❌ Error: langchain_text_splitters not found!")
+    print("💡 Install with: pip install langchain-text-splitters")
+    sys.exit(1)
+
+try:
+    from langchain_community.vectorstores import Chroma
+except ImportError:
+    print("❌ Error: Chroma not found in langchain_community!")
+    print("💡 Install with: pip install langchain-community chromadb")
+    sys.exit(1)
+
+try:
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+except ImportError:
+    print("❌ Error: HuggingFaceEmbeddings not found!")
+    print("💡 Install with: pip install langchain-community sentence-transformers")
+    sys.exit(1)
 
 
 class VectorStoreCreator:
@@ -15,100 +39,100 @@ class VectorStoreCreator:
         self.vectorstore_dir = Path(vectorstore_dir)
 
     def create_vectorstore(self) -> bool:
-        """Cria o banco de dados vetorial a partir dos PDFs"""
-        print("🚀 Iniciando criação do banco de dados vetorial...")
+        """Creates the vector database from PDF documents"""
+        print("🚀 Starting vector database creation...")
 
-        # Verificações iniciais
         if not self._validate_input():
             return False
 
         try:
-            # 1. Carregar documentos
+            # 1. Load documents
             documents = self._load_documents()
             if not documents:
                 return False
 
-            # 2. Dividir em chunks
+            # 2. Split into chunks
             chunks = self._split_documents(documents)
 
-            # 3. Criar embeddings e vectorstore
-            vectorstore = self._create_vectorstore(chunks)
+            # 3. Create embeddings and vectorstore
+            self._create_vectorstore(chunks)
 
-            # 4. Salvar estatísticas
+            # 4. Save processing stats
             self._save_stats(documents, chunks)
 
-            print("✅ Banco de dados vetorial criado com sucesso!")
+            print("✅ Vector database successfully created!")
             return True
 
         except Exception as e:
-            print(f"❌ Erro ao criar banco de dados: {e}")
+            print(f"❌ Error creating vector database: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def _validate_input(self) -> bool:
-        """Valida se a pasta de entrada existe e tem PDFs"""
+        """Validates input folder and checks for PDFs"""
         if not self.rag_dir.exists():
-            print(f"❌ Pasta '{self.rag_dir}' não encontrada!")
-            print(f"💡 Crie a pasta e adicione seus PDFs")
+            print(f"❌ Folder '{self.rag_dir}' not found!")
+            print("💡 Create the folder and add your PDF files.")
             return False
 
         pdf_files = list(self.rag_dir.glob("*.pdf"))
         if not pdf_files:
-            print(f"❌ Nenhum arquivo PDF encontrado em '{self.rag_dir}'")
+            print(f"❌ No PDF files found in '{self.rag_dir}'")
             return False
 
-        print(f"📚 Encontrados {len(pdf_files)} arquivos PDF:")
+        print(f"📚 Found {len(pdf_files)} PDF files:")
         for pdf in pdf_files:
             print(f"   - {pdf.name}")
 
         return True
 
     def _load_documents(self):
-        """Carrega documentos PDF"""
-        print("📂 Carregando documentos...")
+        """Loads PDF documents"""
+        print("📂 Loading documents...")
         try:
             loader = PyPDFDirectoryLoader(str(self.rag_dir))
             documents = loader.load()
-            print(f"✅ {len(documents)} páginas carregadas")
+            print(f"✅ {len(documents)} pages loaded")
             return documents
         except Exception as e:
-            print(f"❌ Erro ao carregar PDFs: {e}")
+            print(f"❌ Error loading PDFs: {e}")
+            print("💡 Make sure you installed: pip install pypdf")
             return None
 
     def _split_documents(self, documents):
-        """Divide documentos em chunks"""
-        print("✂️  Dividindo documentos em chunks...")
-        text_splitter = RecursiveCharacterTextSplitter(
+        """Splits documents into chunks"""
+        print("✂️  Splitting documents into chunks...")
+        splitter = RecursiveCharacterTextSplitter(
             chunk_size=600,
             chunk_overlap=100,
             length_function=len,
         )
-        chunks = text_splitter.split_documents(documents)
-        print(f"📄 {len(chunks)} chunks criados")
+        chunks = splitter.split_documents(documents)
+        print(f"📄 {len(chunks)} chunks created")
         return chunks
 
     def _create_vectorstore(self, chunks):
-        """Cria o banco de dados vetorial"""
-        print("🔨 Criando embeddings...")
+        """Creates and persists the vector database"""
+        print("🔨 Creating embeddings...")
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
 
-        print("💾 Salvando banco vetorial...")
-        # Limpar diretório existente se necessário
+        print("💾 Saving vector database...")
         if self.vectorstore_dir.exists():
-            print("⚠️  Diretório existente será sobrescrito")
+            print("⚠️  Existing directory will be overwritten")
 
-        vectorstore = Chroma.from_documents(
+        Chroma.from_documents(
             documents=chunks,
             embedding=embeddings,
             persist_directory=str(self.vectorstore_dir)
         )
 
-        print(f"🗄️ Vectorstore salvo em: {self.vectorstore_dir}")
-        return vectorstore
+        print(f"🗄️ Vectorstore saved at: {self.vectorstore_dir}")
 
     def _save_stats(self, documents, chunks):
-        """Salva estatísticas do processamento"""
+        """Saves processing statistics"""
         stats = {
             "total_pages": len(documents),
             "total_chunks": len(chunks),
@@ -117,49 +141,19 @@ class VectorStoreCreator:
             "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
         }
 
-        # Salvar estatísticas em arquivo
         stats_file = self.vectorstore_dir / "processing_stats.json"
         import json
-        with open(stats_file, 'w', encoding='utf-8') as f:
+        with open(stats_file, "w", encoding="utf-8") as f:
             json.dump(stats, f, indent=2, ensure_ascii=False)
 
-        print("📊 Estatísticas salvas:")
-        print(f"   - Páginas processadas: {stats['total_pages']}")
-        print(f"   - Chunks criados: {stats['total_chunks']}")
-        print(f"   - Modelo de embeddings: {stats['embedding_model']}")
-
-
-def main():
-    """Função principal"""
-    print("🎯 Criador de Banco de Dados Vetorial")
-    print("=" * 50)
-
-    creator = VectorStoreCreator(
-        rag_dir="rag_files",
-        vectorstore_dir="vectorstore"
-    )
-
-    success = creator.create_vectorstore()
-
-    if success:
-        print("\n✅ Processo concluído!")
-        print("📍 O banco de dados está pronto em: ./vectorstore/")
-        print("💡 Agora você pode usar com seu agente:")
-        print("""
-from vectorstore_creator import load_vectorstore
-from langchain.embeddings import HuggingFaceEmbeddings
-
-# Carregar o vectorstore existente
-vectorstore = load_vectorstore("vectorstore")
-retriever = vectorstore.as_retriever()
-        """)
-    else:
-        print("\n❌ Falha na criação do banco de dados")
-        sys.exit(1)
+        print("📊 Processing stats saved:")
+        print(f"   - Pages processed: {stats['total_pages']}")
+        print(f"   - Chunks created: {stats['total_chunks']}")
+        print(f"   - Embedding model: {stats['embedding_model']}")
 
 
 def load_vectorstore(vectorstore_dir: str = "vectorstore"):
-    """Função para carregar o vectorstore existente"""
+    """Loads an existing vectorstore from disk"""
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
@@ -170,6 +164,27 @@ def load_vectorstore(vectorstore_dir: str = "vectorstore"):
     )
 
     return vectorstore
+
+
+def main():
+    """Main entry point"""
+    print("🎯 Vector Database Creator")
+    print("=" * 50)
+
+    creator = VectorStoreCreator(
+        rag_dir="rag_files",
+        vectorstore_dir="vectorstore"
+    )
+
+    success = creator.create_vectorstore()
+
+    if success:
+        print("\n✅ Process completed!")
+        print("📁 Vector database is ready at: ./vectorstore/")
+        print("💡 You can now use it with your agent.")
+    else:
+        print("\n❌ Failed to create vector database")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

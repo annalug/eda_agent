@@ -1,73 +1,68 @@
+# vectorstore_loader.py - Load existing vector database (ENGLISH VERSION)
+
 from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from pathlib import Path
 
 
-def carrega_banco_de_dados_vetorial(path_documentos: str) -> Chroma:
+def load_vector_database(path: str) -> Chroma:
     """
-    Carrega o banco de dados vetorial existente
+    Loads an existing vector database.
 
     Args:
-        path_documentos: Caminho para a pasta do vectorstore
+        path: Path to the vectorstore directory.
 
     Returns:
-        Chroma: Instância do banco de dados vetorial ou None em caso de erro
+        Chroma instance or None if an error occurs.
     """
     try:
-        # Verificar se o diretório existe
-        if not Path(path_documentos).exists():
-            print(f"❌ Diretório do vectorstore não encontrado: {path_documentos}")
+        if not Path(path).exists():
+            print(f"❌ Vectorstore directory not found: {path}")
             return None
 
-        # Verificar se existem arquivos no diretório
-        vectorstore_files = list(Path(path_documentos).glob("*"))
-        if not vectorstore_files:
-            print(f"❌ Nenhum arquivo do vectorstore encontrado em: {path_documentos}")
+        files = list(Path(path).glob("*"))
+        if not files:
+            print(f"❌ No vectorstore files found in: {path}")
             return None
 
-        print(f"🔧 Carregando embeddings...")
-        # Usando embeddings do HuggingFace (mesmo usado na criação)
+        print("🔧 Loading embeddings...")
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
 
-        print(f"📂 Carregando vectorstore de: {path_documentos}")
-        # Carrega o banco de dados vetorial existente
+        print(f"📂 Loading vectorstore from: {path}")
         vectorstore = Chroma(
-            persist_directory=path_documentos,
+            persist_directory=path,
             embedding_function=embeddings
         )
 
-        # Verificar se carregou corretamente
-        collection_count = vectorstore._collection.count()
-        print(f"✅ Vectorstore carregado com sucesso!")
-        print(f"📊 Documentos no banco: {collection_count}")
+        count = vectorstore._collection.count()
+        print("✅ Vectorstore successfully loaded!")
+        print(f"📊 Documents in database: {count}")
 
         return vectorstore
 
     except Exception as e:
-        print(f"❌ Erro ao carregar o banco de dados vetorial: {e}")
+        print(f"❌ Error loading vector database: {e}")
         return None
 
 
-# teste_carregamento.py
-def testa_carregamento():
-    """Testa o carregamento do vectorstore"""
-    print("🧪 Testando carregamento do vectorstore...")
-    
-    vectorstore = carrega_banco_de_dados_vetorial("vectorstore")
-    
+def test_loading():
+    """Quick test for vectorstore loading"""
+    print("🧪 Testing vectorstore loading...")
+
+    vectorstore = load_vector_database("vectorstore")
+
     if vectorstore:
-        print("✅ Teste bem-sucedido!")
-        
-        # Teste rápido de busca
-        resultados = vectorstore.similarity_search("tecnologia", k=2)
-        print(f"📄 Documentos encontrados no teste: {len(resultados)}")
-        
+        print("✅ Test successful!")
+
+        results = vectorstore.similarity_search("technology", k=2)
+        print(f"📄 Documents found in test search: {len(results)}")
         return True
     else:
-        print("❌ Falha no carregamento")
+        print("❌ Loading test failed")
         return False
 
+
 if __name__ == "__main__":
-    testa_carregamento()
+    test_loading()

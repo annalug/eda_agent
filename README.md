@@ -1,7 +1,10 @@
 # 📊 Data Analysis Agent with RAG
 
-An intelligent system for Exploratory Data Analysis (EDA) integrated with Retrieval-Augmented Generation (RAG) for querying technical documents.
-It performs statistical analysis on CSV datasets while enabling semantic search over PDF files.
+An intelligent system for Exploratory Data Analysis (EDA) integrated with Retrieval-Augmented Generation (RAG) for querying technical documents.  
+It performs statistical analysis on CSV datasets while enabling semantic search over PDF files using a large language model.
+
+---
+
 ## 🏗️ Project Structure
 ```
 eda_agent/
@@ -33,64 +36,83 @@ eda_agent/
 ## 🚀 Features
 
 ### 🤖 Intelligent Agent (`agent.py`)
-- **Statistical Analysis**: Descriptive statistics, dataset summary, numerical analysis
-- **Data Visualization**: Histograms and boxplots generated on demand
-- **RAG System**: Semantic search across technical PDF documents
+- **Statistical Analysis**: Dataset summary and column-level descriptive statistics  
+- **Data Visualization**: Histograms and boxplots generated on demand  
+- **RAG System**: Semantic search across technical PDF documents  
 - **Specialized Tools**:
-  - `buscar_documentos()` - semantic PDF retrieval
-  - `estatisticas_coluna()` - column-level statistics
-  - `criar_histograma()` - distribution visualization
-  - `criar_boxplot()` - outlier & quartile inspection
-  - `explicar_conceito()` - list available dataset columns
-  - `nomes_colunas()` - global numerical summary
+  - `search_documents()` — semantic PDF retrieval (RAG)
+  - `dataset_summary()` — dataset shape and name
+  - `column_names()` — list available dataset columns
+  - `column_stats()` — statistics for a numeric column
+  - `create_histogram()` — distribution visualization
+  - `create_boxplot()` — outlier & quartile inspection
+
+The agent answers general data science concepts directly and only calls tools when necessary.
+
+---
 
 ### 🎨 Web Interface (`app.py`)
-- **Interactive Chat**: with persistent history
-- **Real-Time Visualizations**: embedded directly in the chat
-- **Sidebar Control Panel**: showing system status and dataset details
-- **Responsive Design**: for desktop/tablet
-- **State Management**: for conversation and session control
+- **Interactive Chat** with persistent history  
+- **Real-Time Visualizations** embedded directly in the chat  
+- **Sidebar Control Panel** showing system and dataset status  
+- **Responsive Design** for desktop and tablet  
+- **State Management** for conversation and session control  
+
+---
 
 ### 📥 Data Handling (`dataset_download.py`)
-- **Automatic Download**: of the credit card fraud dataset
-- **Smart Pre-processing**: automatic sampling for large datasets (>10k rows)
-- **Consistent Directory Structure**: under `data/`
-- **Integrity Check**: to confirm successful download and copy
+- **Automatic Download** of the credit card fraud dataset  
+- **Smart Pre-processing** with automatic sampling for large datasets (>10k rows)  
+- **Consistent Directory Structure** under `data/`  
+- **Integrity Check** to confirm successful download and copy  
+
+---
 
 ### 🗄️ RAG System
+
+**Knowledge Base Source**
+
+The RAG system uses content extracted from the book:
+
+**_Probability and Statistics: The Science of Uncertainty_**  
+Michael J. Evans and Jeffrey S. Rosenthal  
+University of Toronto  
+
+📖 PDF source:  
+https://utstat.utoronto.ca/mikevans/jeffrosenthal/book.pdf  
+
+This material is used for educational and demonstration purposes, allowing the agent to answer theoretical questions about probability, statistics, and data analysis.
+
+---
+
 **`vectorstore_creator.py`**:
-- Loads all PDFs from
-- Splits text into optimized chunks (600 chars, 100 overlap)
-- Generates embeddings with `sentence-transformers/all-MiniLM-L6-v2`
-- Saves a fully persistent ChromaDB `vectorstore/`
+- Loads all PDFs from `rag_files/`  
+- Splits text into optimized chunks (600 chars, 100 overlap)  
+- Generates embeddings with `sentence-transformers/all-MiniLM-L6-v2`  
+- Saves a fully persistent ChromaDB vectorstore in `vectorstore/`  
 
 **`vectorstore_loader.py`**:
-- Safely loads the vectorstore
-- Performs integrity checks and quick retrieval tests
-- Displays document counts and retrieval quality
+- Safely loads the vectorstore  
+- Performs integrity checks and quick retrieval tests  
+- Displays document counts and retrieval quality  
+
+---
 
 ## 🛠️ Installation & Setup
 
 ### Requirements
 ```bash
-
 pip install streamlit pandas numpy matplotlib langchain groq chromadb sentence-transformers kagglehub python-dotenv
 
-
+# or
 pip install -r requirements.txt
 ```
 Environment Setup
 
-Create your .env:
+Create your .env file:
+```bash
+GROQ_API_KEY=your_groq_api_key_here
 ```
-GROQ_API_KEY=sua_chave_groq_aqui
-```
-Configure Kaggle (dataset download):
-
-Download your kaggle.json 
-
-Place it in: ~/.kaggle/kaggle.json (Linux/Mac) or C:\Users\seu_usuario\.kaggle\kaggle.json (Windows)
-
 🎯 Usage Workflow:
 
 1. 🗄️ Prepare the Knowledge Base (RAG)
@@ -100,9 +122,8 @@ Add your PDFs to rag_files/ and run:
 ```
 python vectorstore_creator.py
 ```
-2. 📥 Download the Dataset
+2. 📥 Download the Example Dataset
 ```
-# Download automático do dataset de fraudes
 python dataset_download.py
 ```
 3. 🚀 Run the System
@@ -159,7 +180,7 @@ python agent.py
     Chunk Overlap: 100 characters
     Retrieval: Top 3 most relevant documents
     
-    Optimizations
+    Optimizations:
     
     Automatic sampling for large datasets
     
